@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Employee - EMS</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .form-card {
+            max-width: 600px;
+            margin: 4rem auto;
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 0.75rem;
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-card">
+        <div class="header">
+            <h1>Add New Employee</h1>
+            <p>Enter the details of the new employee below.</p>
+        </div>
+
+        <form id="createEmployeeForm">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" placeholder="John Doe" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="john@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="position">Position</label>
+                <input type="text" id="position" name="position" placeholder="Software Engineer" required>
+            </div>
+
+            <div class="form-group">
+                <label for="salary">Salary</label>
+                <input type="number" id="salary" name="salary" placeholder="50000" required min="0">
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <div class="btn-group">
+                <button type="button" class="btn-secondary" onclick="window.location.href='/employees'">Cancel</button>
+                <button type="submit" class="btn-primary">Create Employee</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        document.getElementById('createEmployeeForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const submitBtn = this.querySelector('.btn-primary');
+            const messageDiv = document.getElementById('message');
+
+            // Loading state
+            submitBtn.classList.add('loading');
+            submitBtn.textContent = 'Creating...';
+            messageDiv.style.display = 'none';
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                position: document.getElementById('position').value,
+                salary: parseInt(document.getElementById('salary').value)
+            };
+
+            try {
+                const response = await fetch('/api/v1/employees/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to create employee');
+                }
+
+                messageDiv.className = 'message success';
+                messageDiv.textContent = 'Employee created successfully!';
+                messageDiv.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = '/employees';
+                }, 1000);
+
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = error.message;
+                messageDiv.style.display = 'block';
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Create Employee';
+            }
+        });
+    </script>
+</body>
+
+</html>

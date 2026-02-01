@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - EMS</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Welcome Back</h1>
+                <p>Please enter your details to sign in.</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="username" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <!-- <div class="form-options">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember">
+                        <label for="remember">Remember me</label>
+                    </div>
+                    <a href="#" class="forgot-password">Forgot password?</a>
+                </div> -->
+                <button type="submit" class="btn-primary">Sign in</button>
+            </form>
+            <div id="message" class="message"></div>
+            <!-- <div class="login-footer">
+                <p>Don't have an account? <a href="/signup">Sign up</a></p>
+            </div> -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            const submitBtn = this.querySelector('button[type="submit"]');
+
+            // Reset message
+            messageDiv.style.display = 'none';
+            messageDiv.textContent = '';
+            messageDiv.className = 'message';
+
+            // Loading state
+            submitBtn.classList.add('loading');
+            submitBtn.textContent = 'Signing in...';
+
+            try {
+                // The backend expects x-www-form-urlencoded for OAuth2 password flow
+                const formData = new URLSearchParams();
+                formData.append('username', email);
+                formData.append('password', password);
+
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageDiv.textContent = 'Login successful! Redirecting...';
+                    messageDiv.classList.add('success');
+                    messageDiv.style.display = 'block';
+
+                    // Store the token (in a real app, use secure cookies or storage)
+                    localStorage.setItem('access_token', data.access_token);
+
+                    // Short delay for visual feedback
+                    setTimeout(() => {
+                        setTimeout(() => {
+                            window.location.href = '/employees'; // Redirect to dashboard
+                        }, 1000);
+                    }, 1000);
+                } else {
+                    throw new Error(data.detail || 'Login failed');
+                }
+            } catch (error) {
+                messageDiv.textContent = error.message;
+                messageDiv.classList.add('error');
+                messageDiv.style.display = 'block';
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Sign in';
+            }
+        });
+    </script>
+</body>
+
+</html>

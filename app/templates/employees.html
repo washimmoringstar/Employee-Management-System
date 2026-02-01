@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - EMS</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .logout-btn {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-muted);
+        }
+
+        .content-card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 0.875rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.01);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-inactive {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-title {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .loading-state {
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Employee Management</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="logout-btn" onclick="window.location.href='/create-employee'"
+                    style="background-color: #4F46E5; border-color: #4F46E5; color: white;">Add Employee</button>
+                <button class="logout-btn" id="refreshBtn">Refresh Data</button>
+                <button class="logout-btn" id="logoutBtn"
+                    style="color: var(--error-color); border-color: rgba(239,68,68,0.3);">Logout</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Total Employees</div>
+                <div class="stat-value" id="totalEmployees">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Active Now</div>
+                <div class="stat-value" id="activeEmployees">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Departments</div>
+                <div class="stat-value">4</div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="table-container">
+                <table id="employeeTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="6" class="loading-state">Loading employee data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        async function fetchEmployees() {
+            const tableBody = document.getElementById('tableBody');
+
+            try {
+                const response = await fetch('/api/v1/employees/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    // Token expired or invalid
+                    localStorage.removeItem('access_token');
+                    window.location.href = '/';
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const employees = await response.json();
+                updateUI(employees);
+            } catch (error) {
+                console.error('Error:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="loading-state" style="color: var(--error-color)">
+                            Failed to load data. Please try again.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function updateUI(employees) {
+            const tableBody = document.getElementById('tableBody');
+            const totalEmployees = document.getElementById('totalEmployees');
+            const activeEmployees = document.getElementById('activeEmployees');
+
+            totalEmployees.textContent = employees.length;
+            // Assuming we might have an is_active field, otherwise just showing random stat or all
+            const activeCount = employees.filter(e => e.is_active !== false).length;
+            activeEmployees.textContent = activeCount;
+
+            if (employees.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="loading-state">No employees found.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td>#${emp.id}</td>
+                    <!-- Assuming name field exists, fallback to email username if not -->
+                    <td><div style="font-weight: 500">${emp.name || emp.email.split('@')[0]}</div></td>
+                    <td style="color: var(--text-muted)">${emp.email}</td>
+                    <td>${emp.role || 'Employee'}</td>
+                    <td>
+                        <span class="status-badge ${emp.is_active !== false ? 'status-active' : 'status-inactive'}">
+                            ${emp.is_active !== false ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-muted)">${new Date().toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            window.location.href = '/';
+        });
+
+        // Refresh handler
+        document.getElementById('refreshBtn').addEventListener('click', fetchEmployees);
+
+        // Initial load
+        fetchEmployees();
+    </script>
+</body>
+
+</html>
