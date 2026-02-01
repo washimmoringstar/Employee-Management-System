@@ -2,7 +2,6 @@ Employee Management System (EMS) - Detailed Report
 Generated: February 1, 2026
 Project Location: c:\Users\barbi\OneDrive\Desktop\Ems
 Total Project Size: ~66 KB (excluding virtual environment)
-
 📋 Executive Summary
 The Employee Management System is a FastAPI-based web application designed to manage employees and users with role-based access control (RBAC). The system features a RESTful API backend with a frontend UI built using HTML templates and vanilla JavaScript.
 
