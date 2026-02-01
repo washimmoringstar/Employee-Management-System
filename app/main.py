@@ -29,10 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(employee_router, prefix="/api/v1")
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(users_router, prefix="/api/v1")
-
+# Page routes (must be before API routes to avoid conflicts)
 @app.get("/", response_class=HTMLResponse)
 def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -44,6 +41,19 @@ def employees_page(request: Request):
 @app.get("/create-employee", response_class=HTMLResponse)
 def create_employee_page(request: Request):
     return templates.TemplateResponse("create_employee.html", {"request": request})
+
+@app.get("/users", response_class=HTMLResponse)
+def users_page(request: Request):
+    return templates.TemplateResponse("users.html", {"request": request})
+
+@app.get("/create-user", response_class=HTMLResponse)
+def create_user_page(request: Request):
+    return templates.TemplateResponse("create_user.html", {"request": request})
+
+# API routes
+app.include_router(employee_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
 
 
 # @app.get("/")
